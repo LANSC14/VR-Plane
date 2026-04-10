@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>平面</title>
+    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
+  </head>
+  <body>
+    <a-scene background="color: #000" vr-mode-ui="enabled: true">
+      <a-entity camera position="0 1.6 0" look-controls></a-entity>
+      <a-assets>
+        <canvas id="canvasFlatData" width="4096" height="1024"></canvas>
+      </a-assets>
+
+      <a-plane 
+        src="#canvasFlatData" 
+        height="5" 
+        width="22" 
+        position="0 1.6 -4.5">
+      </a-plane>
+
+      <script>
+        var canvas = document.getElementById('canvasFlatData');
+        var ctx = canvas.getContext('2d');
+        ctx.fillStyle = "#000";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        
+        ctx.fillStyle = "#00FF00";
+        ctx.textAlign = "left";
+        
+        // 內容與圓弧版完全一致
+        for (let i = 0; i < 18; i++) {
+          for (let j = 0; j < 6; j++) {
+            let x = j * 680 + 50;
+            let y = i * 55 + 60;
+            ctx.font = "bold 28px Monospace";
+            ctx.fillText("VAL_" + i + "_" + j + ": [" + Math.random().toFixed(5) + "]", x, y);
+            ctx.font = "18px Monospace";
+            ctx.fillText("STREAMS_ACTIVE_INDEX_0" + j, x, y + 22);
+          }
+        }
+      </script>
+    </a-scene>
+  </body>
+</html>
