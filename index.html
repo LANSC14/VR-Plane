@@ -2,41 +2,51 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <title>平面</title>
+    <title>平面 - 高度修正</title>
     <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   </head>
   <body>
-    <a-scene background="color: white" vr-mode-ui="enabled: true">
+    <a-scene background="color: #DADADA" fog="type: linear; color: #DADADA; far: 25; near: 0">
       <a-entity camera position="0 1.6 0" look-controls></a-entity>
       <a-assets>
         <canvas id="canvasFlatData" width="4096" height="1024"></canvas>
       </a-assets>
 
+      <a-plane position="0 0 0" rotation="-90 0 0" width="100" height="100" color="#999" opacity="0.5" metalness="0.5"></a-plane>
+
       <a-plane 
         src="#canvasFlatData" 
         height="5" 
         width="22" 
-        position="0 1.6 -4.5">
+        position="0 2.5 -4.5"
+        material="shader: standard; metalness: 0.6; roughness: 0.2;">
       </a-plane>
 
       <script>
         var canvas = document.getElementById('canvasFlatData');
         var ctx = canvas.getContext('2d');
-        ctx.fillStyle = "#000";
+        ctx.fillStyle = "#111111";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         
-        ctx.fillStyle = "#00FF00";
-        ctx.textAlign = "left";
-        
-        // 內容與圓弧版完全一致
-        for (let i = 0; i < 18; i++) {
-          for (let j = 0; j < 6; j++) {
-            let x = j * 680 + 50;
-            let y = i * 55 + 60;
-            ctx.font = "bold 28px Monospace";
-            ctx.fillText("VAL_" + i + "_" + j + ": [" + Math.random().toFixed(5) + "]", x, y);
-            ctx.font = "18px Monospace";
-            ctx.fillText("STREAMS_ACTIVE_INDEX_0" + j, x, y + 22);
+        const rows = 6;
+        const cols = 15;
+        const unitW = canvas.width / cols;
+        const unitH = canvas.height / rows;
+
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+
+        for (let i = 0; i < rows; i++) {
+          for (let j = 0; j < cols; j++) {
+            let x = (j * unitW) + (unitW / 2);
+            let y = (i * unitH) + (unitH / 2);
+            let fixedVal = (0.88888 - (i * 0.001) - (j * 0.002)).toFixed(5);
+            ctx.fillStyle = "#00FF00";
+            ctx.font = "bold 32px Monospace";
+            ctx.fillText("[" + fixedVal + "]", x, y - 12);
+            ctx.fillStyle = "#666666"; 
+            ctx.font = "16px Monospace";
+            ctx.fillText("DATA_BLOCK_" + i + "_" + j, x, y + 20);
           }
         }
       </script>
