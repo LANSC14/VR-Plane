@@ -108,7 +108,7 @@ body { margin:0; overflow:hidden; }
       wasd-controls>
 
       <!-- VR HUD -->
-      <a-entity id="vrHud" visible="false" position="0 3 -11" scale="8 8 8">
+      <a-entity id="vrHud" visible="false" position="0 3 -7" scale="8 8 8">
         <a-text id="vrTimerText"
           value="⏱ 00:00.00"
           color="#00ffcc"
@@ -143,7 +143,7 @@ body { margin:0; overflow:hidden; }
   </a-entity>
 
   <!-- Start -->
-  <a-entity id="startBtn" position="0 1.6 -2.5">
+  <a-entity id="startBtn" position="0 2.5 -2.5">
     <a-plane id="startPlane"
       class="clickable"
       width="1.2"
@@ -167,7 +167,7 @@ body { margin:0; overflow:hidden; }
   </a-entity>
 
   <!-- 平面牆 -->
-  <a-entity id="planeRoot" position="0 2.5 -12" visible="false">
+  <a-entity id="planeRoot" position="0 2.5 -8" visible="false">
     <a-entity id="planeWall" class="clickable"></a-entity>
   </a-entity>
 
@@ -409,7 +409,7 @@ function buildVrResult(timeStr){
 
   vrResultPanel=document.createElement('a-entity');
 
-  vrResultPanel.setAttribute('position','0 2.5 -11');
+  vrResultPanel.setAttribute('position','0 2.5 -7');
 
   const bg=document.createElement('a-plane');
   bg.setAttribute('width','3');
