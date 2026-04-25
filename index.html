@@ -1,287 +1,570 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <meta charset="utf-8">
-    <link rel="icon" href="data:,">
-    <title>Plane</title>
-    <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-    <style>
-      body { margin: 0; overflow: hidden; }
-      #hud {
-        position: fixed; top: 18px; left: 22px;
-        z-index: 999; pointer-events: none;
-        font-family: 'Courier New', monospace;
-        font-size: 22px; font-weight: bold;
-        color: #00ffcc; letter-spacing: 2px; display: none;
-      }
-      #crosshair {
-        position: fixed; top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        width: 18px; height: 18px; pointer-events: none; z-index: 999;
-      }
-      #crosshair::before, #crosshair::after {
-        content: ''; position: absolute; background: #00ffcc; opacity: 0.85;
-      }
-      #crosshair::before { width: 2px; height: 100%; left: 50%; top: 0; transform: translateX(-50%); }
-      #crosshair::after  { height: 2px; width: 100%; top: 50%; left: 0; transform: translateY(-50%); }
-      #result {
-        position: fixed; top: 50%; left: 50%;
-        transform: translate(-50%, -50%);
-        z-index: 999; pointer-events: none;
-        font-family: 'Courier New', monospace;
-        font-size: 36px; font-weight: bold;
-        color: #ffcc00; text-align: center; display: none;
-      }
-      #target-hint {
-        position: fixed; top: 18px; right: 22px;
-        z-index: 999; pointer-events: none;
-        font-family: 'Courier New', monospace;
-        font-size: 15px; color: #ffffffaa; display: none;
-        text-align: right;
-      }
-      #target-hint span {
-        display: block;
-        color: #ff4466; font-size: 30px; font-weight: bold;
-        letter-spacing: 2px;
-      }
-      #retryBtn {
-        position: fixed; top: calc(50% + 80px); left: 50%;
-        transform: translateX(-50%); z-index: 999;
-        font-family: 'Courier New', monospace; font-size: 20px;
-        font-weight: bold; color: #00ffcc; border: 2px solid #00ffcc;
-        padding: 8px 20px; cursor: pointer; display: none;
-      }
-    </style>
-  </head>
-  <body>
-    <div id="hud">⏱ 00:00.00</div>
-    <div id="crosshair"></div>
-    <div id="result"></div>
-    <div id="target-hint">找到並點擊：<span id="targetLabel">--</span></div>
-    <div id="retryBtn">↻ RETRY</div>
+<head>
+<meta charset="utf-8">
+<link rel="icon" href="data:,">
+<title>Plane VR</title>
+<script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
 
-    <a-scene background="color: #0a0a1a" vr-mode-ui="enabled: false">
-      <a-entity id="cam" camera position="0 1.6 0" look-controls="pointerLockEnabled: false" wasd-controls></a-entity>
+<style>
+body { margin:0; overflow:hidden; }
 
-      <a-entity id="startBtn" position="0 1.6 -2.5">
-        <a-box width="1.2" height="0.45" depth="0.08" color="#003344" opacity="0.95"></a-box>
-        <a-box width="1.26" height="0.51" depth="0.04" color="#00ffcc" opacity="0.25"></a-box>
-        <a-text value="▶ START" align="center" position="0 0 0.06" color="#00ffcc" width="3.5" font="https://cdn.aframe.io/fonts/Exo2Bold.fnt"></a-text>
+#hud{
+  position:fixed; top:18px; left:22px;
+  z-index:999; pointer-events:none;
+  font-family:'Courier New', monospace;
+  font-size:22px; font-weight:bold;
+  color:#00ffcc; letter-spacing:2px;
+  display:none;
+}
+
+#crosshair{
+  position:fixed; top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  width:18px; height:18px;
+  pointer-events:none; z-index:999;
+}
+#crosshair::before,#crosshair::after{
+  content:'';
+  position:absolute;
+  background:#00ffcc;
+  opacity:.85;
+}
+#crosshair::before{
+  width:2px; height:100%;
+  left:50%; top:0;
+  transform:translateX(-50%);
+}
+#crosshair::after{
+  height:2px; width:100%;
+  top:50%; left:0;
+  transform:translateY(-50%);
+}
+
+#result{
+  position:fixed;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  z-index:999; pointer-events:none;
+  font-family:'Courier New', monospace;
+  font-size:36px; font-weight:bold;
+  color:#ffcc00;
+  text-align:center;
+  display:none;
+}
+
+#target-hint{
+  position:fixed;
+  top:18px; right:22px;
+  z-index:999; pointer-events:none;
+  font-family:'Courier New', monospace;
+  font-size:15px;
+  color:#ffffffaa;
+  text-align:right;
+  display:none;
+}
+#target-hint span{
+  display:block;
+  color:#ff4466;
+  font-size:30px;
+  font-weight:bold;
+}
+
+#retryBtn{
+  position:fixed;
+  top:calc(50% + 80px);
+  left:50%;
+  transform:translateX(-50%);
+  z-index:999;
+  font-family:'Courier New', monospace;
+  font-size:20px;
+  font-weight:bold;
+  color:#00ffcc;
+  border:2px solid #00ffcc;
+  padding:8px 20px;
+  cursor:pointer;
+  display:none;
+}
+</style>
+</head>
+
+<body>
+
+<div id="hud">⏱ 00:00.00</div>
+<div id="crosshair"></div>
+<div id="result"></div>
+<div id="target-hint">找到並點擊：<span id="targetLabel">--</span></div>
+<div id="retryBtn">↻ RETRY</div>
+
+<a-scene background="color:#0a0a1a" vr-mode-ui="enabled:true">
+
+  <!-- 玩家 -->
+  <a-entity id="rig" position="0 0 0">
+
+    <a-entity id="cam"
+      camera
+      position="0 2.5 0"
+      look-controls="pointerLockEnabled:false; magicWindowTrackingEnabled:true; touchEnabled:true"
+      wasd-controls>
+
+      <!-- VR HUD -->
+      <a-entity id="vrHud" visible="false" position="0 3 -11" scale="8 8 8">
+        <a-text id="vrTimerText"
+          value="⏱ 00:00.00"
+          color="#00ffcc"
+          width="1.5"
+          align="right"
+          position="-0.06 0 0"></a-text>
+
+        <a-text value="|" color="#ffffff33" width="0.6"
+          align="center" position="0 0 0"></a-text>
+
+        <a-text id="vrTargetText"
+          value="找: --"
+          color="#ff4466"
+          width="1.5"
+          align="left"
+          position="0.06 0 0"></a-text>
       </a-entity>
 
-      <a-entity id="planeRoot" position="0 2.5 -8" visible="false"></a-entity>
+    </a-entity>
 
-      <a-plane rotation="-90 0 0" width="30" height="30" color="#080818" roughness="1"></a-plane>
-      <a-light type="ambient" color="#ffffff" intensity="2.5"></a-light>
-    </a-scene>
+    <!-- 手把 -->
+    <a-entity id="rHand"
+      laser-controls="hand:right"
+      raycaster="objects:.clickable; far:40; lineColor:#00ffcc; lineOpacity:0.8">
+    </a-entity>
 
-    <script>
-      const ROWS = 7, COLS = 10;
-      const PLANE_W = 40, PLANE_H = 5;
-      const TEX_W = 8192, TEX_H = 2048;
+    <a-entity id="lHand"
+      laser-controls="hand:left"
+      raycaster="objects:.clickable; far:40; lineColor:#00ffcc; lineOpacity:0.4">
+    </a-entity>
 
-      let gridValues = [], targetIndex = -1, cellData = [];
-      let planeMesh = null, canvasTex = null, canvas, ctx;
-      let errorCount = 0; // 新增：錯誤計數器
+  </a-entity>
 
-      const hud = document.getElementById('hud'), resultDiv = document.getElementById('result');
-      const targetHint = document.getElementById('target-hint'), targetLabel = document.getElementById('targetLabel');
-      const retryBtn = document.getElementById('retryBtn'), startBtn = document.querySelector('#startBtn');
-      const planeRoot = document.querySelector('#planeRoot');
+  <!-- Start -->
+  <a-entity id="startBtn" position="0 1.6 -2.5">
+    <a-plane id="startPlane"
+      class="clickable"
+      width="1.2"
+      height="0.45"
+      color="#003344"
+      opacity="0.95"></a-plane>
 
-      function initCanvas() {
-        canvas = document.createElement('canvas');
-        canvas.width = TEX_W; canvas.height = TEX_H;
-        ctx = canvas.getContext('2d');
-      }
+    <a-plane
+      width="1.26"
+      height="0.51"
+      color="#00ffcc"
+      opacity="0.25"
+      position="0 0 -0.02"></a-plane>
 
-      function generateGrid() {
-        gridValues = [];
-        for (let i = 0; i < ROWS * COLS; i++)
-          gridValues.push((Math.random() * 99.999).toFixed(2));
-        targetIndex = Math.floor(Math.random() * ROWS * COLS);
-      }
+    <a-text value="▶ START"
+      align="center"
+      color="#00ffcc"
+      width="3.5"
+      position="0 0 0.03"
+      font="https://cdn.aframe.io/fonts/Exo2Bold.fnt"></a-text>
+  </a-entity>
 
-      function drawTexture() {
-        ctx.fillStyle = '#040412';
-        ctx.fillRect(0, 0, TEX_W, TEX_H);
+  <!-- 平面牆 -->
+  <a-entity id="planeRoot" position="0 2.5 -12" visible="false">
+    <a-entity id="planeWall" class="clickable"></a-entity>
+  </a-entity>
 
-        ctx.strokeStyle = '#112233';
-        ctx.lineWidth = 2;
-        for (let c = 1; c < COLS; c++) {
-          const x = c * (TEX_W / COLS);
-          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, TEX_H); ctx.stroke();
-        }
-        for (let r = 1; r < ROWS; r++) {
-          const y = r * (TEX_H / ROWS);
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(TEX_W, y); ctx.stroke();
-        }
+  <a-plane rotation="-90 0 0" width="30" height="30"
+    color="#080818"></a-plane>
 
-        cellData = [];
-        const cellW = TEX_W / COLS, cellH = TEX_H / ROWS;
+  <a-light type="ambient" intensity="2.5"></a-light>
 
-        for (let row = 0; row < ROWS; row++) {
-          for (let col = 0; col < COLS; col++) {
-            const idx = row * COLS + col;
-            const cx = (col + 0.5) * cellW;
-            const cy = (row + 0.5) * cellH;
+</a-scene>
 
-            ctx.save();
-            ctx.font = `bold 115px "Courier New", monospace`;
-            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-            ctx.fillStyle = '#00eebb';
-            ctx.shadowColor = '#00eebb66'; ctx.shadowBlur = 12;
-            ctx.fillText(gridValues[idx], cx, cy);
-            ctx.restore();
+<script>
+const ROWS=7, COLS=10;
+const PLANE_W=40, PLANE_H=5;
+const TEX_W=8192, TEX_H=2048;
 
-            cellData.push({
-              index: idx,
-              uMin: col / COLS, uMax: (col + 1) / COLS,
-              vMin: row / ROWS, vMax: (row + 1) / ROWS,
-            });
-          }
-        }
-        if (canvasTex) canvasTex.needsUpdate = true;
-      }
+let gridValues=[], targetIndex=-1, cellData=[];
+let planeMesh=null, canvasTex=null, canvas, ctx;
+let errorCount=0, startTime=0, isRunning=false, rafId=null;
+let gameState='idle';
 
-      function buildPlane() {
-        if (planeMesh) {
-          planeRoot.object3D.remove(planeMesh);
-          planeMesh.geometry.dispose(); planeMesh.material.dispose();
-        }
+let vrRetryMesh=null, vrResultPanel=null;
+let vrTimerText=null, vrTargetText=null;
 
-        const geo = new THREE.PlaneGeometry(PLANE_W, PLANE_H);
-        canvasTex = new THREE.CanvasTexture(canvas);
-        
-        // 優化遠端清晰度
-        canvasTex.anisotropy = 16;
-        canvasTex.minFilter = THREE.LinearMipmapLinearFilter;
-        canvasTex.magFilter = THREE.LinearFilter;
+const hud=document.getElementById('hud');
+const resultDiv=document.getElementById('result');
+const targetHint=document.getElementById('target-hint');
+const targetLabel=document.getElementById('targetLabel');
+const retryBtn=document.getElementById('retryBtn');
 
-        const mat = new THREE.MeshBasicMaterial({ map: canvasTex, side: THREE.FrontSide });
+const startBtn=document.querySelector('#startBtn');
+const planeRoot=document.querySelector('#planeRoot');
+const planeWall=document.querySelector('#planeWall');
+const vrHud=document.querySelector('#vrHud');
 
-        planeMesh = new THREE.Mesh(geo, mat);
-        planeRoot.object3D.add(planeMesh);
-        planeRoot.setAttribute('visible', 'true');
-        drawTexture();
-      }
-
-      let startTime = 0, isRunning = false, rafId = null;
-      function formatTime(ms) {
-        const min = Math.floor(ms / 60000).toString().padStart(2,'0');
-        const sec = Math.floor((ms % 60000) / 1000).toString().padStart(2,'0');
-        const cs  = Math.floor((ms % 1000) / 10).toString().padStart(2,'0');
-        return `${min}:${sec}.${cs}`;
-      }
-      function tick() {
-        if (!isRunning) return;
-        hud.textContent = '⏱ ' + formatTime(performance.now() - startTime);
-        rafId = requestAnimationFrame(tick);
-      }
-
-       function doStart() {
-  errorCount = 0; // 重置錯誤次數
-  generateGrid();
-  if (!canvas) initCanvas();
-  buildPlane();
-  resetCameraToCenter(); // 補這行，強迫視角歸零
-  // --- 加入這段：讓人在開始的一瞬間「長高」 ---
-  const camEl = document.querySelector('#cam');
-  // 假設你希望進去後變成 2.2 公尺高
-  camEl.setAttribute('position', {x: 0, y: 2.5, z: 0}); 
-  // ---------------------------------------
-
-  startBtn.setAttribute('visible', 'false');
-  targetHint.style.display = 'block';
-  targetLabel.textContent = gridValues[targetIndex];
-  hud.style.display = 'block';
-  hud.style.color = '#00ffcc';
-  resultDiv.style.display = 'none';
-  startTime = performance.now();
-  isRunning = true;
-  rafId = requestAnimationFrame(tick);
+function initCanvas(){
+  canvas=document.createElement('canvas');
+  canvas.width=TEX_W;
+  canvas.height=TEX_H;
+  ctx=canvas.getContext('2d');
 }
 
-function resetCameraToCenter() {
-  const camEl = document.querySelector('#cam');
-  const lc = camEl.components['look-controls'];
-  if (lc) {
-    lc.yawObject.rotation.y = 0;
-    lc.pitchObject.rotation.x = 0;
+function generateGrid(){
+  gridValues=[];
+  for(let i=0;i<ROWS*COLS;i++){
+    gridValues.push((Math.random()*99.999).toFixed(2));
   }
+  targetIndex=Math.floor(Math.random()*ROWS*COLS);
 }
-      function doFinish() {
-        isRunning = false;
-        cancelAnimationFrame(rafId);
-        const t = formatTime(performance.now() - startTime);
-        hud.textContent = '⏱ ' + t;
-        hud.style.color = '#ffcc00';
-        // 修改：在結算畫面顯示錯誤次數
-        resultDiv.innerHTML = `✓ &nbsp;${t}<br><span style="font-size:20px;color:#ff4466">Errors: ${errorCount}</span><br><span style="font-size:16px;color:#ffffff88">找到目標！</span>`;
-        resultDiv.style.display = 'block';
-        targetHint.style.display = 'none';
-        retryBtn.style.display = 'block';
+
+function drawTexture(){
+
+  ctx.fillStyle='#040412';
+  ctx.fillRect(0,0,TEX_W,TEX_H);
+
+  ctx.strokeStyle='#112233';
+  ctx.lineWidth=2;
+
+  for(let c=1;c<COLS;c++){
+    const x=c*(TEX_W/COLS);
+    ctx.beginPath();
+    ctx.moveTo(x,0);
+    ctx.lineTo(x,TEX_H);
+    ctx.stroke();
+  }
+
+  for(let r=1;r<ROWS;r++){
+    const y=r*(TEX_H/ROWS);
+    ctx.beginPath();
+    ctx.moveTo(0,y);
+    ctx.lineTo(TEX_W,y);
+    ctx.stroke();
+  }
+
+  cellData=[];
+
+  const cellW=TEX_W/COLS;
+  const cellH=TEX_H/ROWS;
+
+  for(let row=0;row<ROWS;row++){
+    for(let col=0;col<COLS;col++){
+
+      const idx=row*COLS+col;
+      const cx=(col+.5)*cellW;
+      const cy=(row+.5)*cellH;
+
+      ctx.font='bold 115px Courier New';
+      ctx.textAlign='center';
+      ctx.textBaseline='middle';
+      ctx.fillStyle='#00eebb';
+      ctx.shadowColor='#00eebb66';
+      ctx.shadowBlur=12;
+      ctx.fillText(gridValues[idx],cx,cy);
+      ctx.shadowBlur=0;
+
+      cellData.push({
+        index:idx,
+        uMin:col/COLS,
+        uMax:(col+1)/COLS,
+        vMin:row/ROWS,
+        vMax:(row+1)/ROWS
+      });
+    }
+  }
+
+  if(canvasTex) canvasTex.needsUpdate=true;
+}
+
+function buildPlane(){
+
+  if(planeMesh){
+    planeWall.object3D.remove(planeMesh);
+    planeMesh.geometry.dispose();
+    planeMesh.material.dispose();
+  }
+
+  const geo=new THREE.PlaneGeometry(PLANE_W,PLANE_H);
+
+  canvasTex=new THREE.CanvasTexture(canvas);
+  canvasTex.anisotropy=16;
+  canvasTex.minFilter=THREE.LinearMipmapLinearFilter;
+  canvasTex.magFilter=THREE.LinearFilter;
+
+  const mat=new THREE.MeshBasicMaterial({
+    map:canvasTex,
+    side:THREE.FrontSide
+  });
+
+  planeMesh=new THREE.Mesh(geo,mat);
+  planeWall.object3D.add(planeMesh);
+
+  planeRoot.setAttribute('visible','true');
+
+  drawTexture();
+}
+
+function formatTime(ms){
+  return `${Math.floor(ms/60000).toString().padStart(2,'0')}:${Math.floor((ms%60000)/1000).toString().padStart(2,'0')}.${Math.floor((ms%1000)/10).toString().padStart(2,'0')}`;
+}
+
+function tick(){
+  if(!isRunning) return;
+
+  const t=formatTime(performance.now()-startTime);
+
+  hud.textContent='⏱ '+t;
+  if(vrTimerText) vrTimerText.setAttribute('value','⏱ '+t);
+
+  rafId=requestAnimationFrame(tick);
+}
+
+function setVrHudVisible(v){
+  vrHud.setAttribute('visible',v?'true':'false');
+}
+
+function doStart(){
+
+  errorCount=0;
+  gameState='playing';
+
+  generateGrid();
+
+  if(!canvas) initCanvas();
+  buildPlane();
+
+  const cam=document.querySelector('#cam');
+  const lc=cam.components['look-controls'];
+
+  if(lc){
+    lc.yawObject.rotation.y=0;
+    lc.pitchObject.rotation.x=0;
+  }
+
+  cam.setAttribute('position',{x:0,y:2.5,z:0});
+
+  startBtn.setAttribute('visible','false');
+
+  hud.style.display='block';
+  hud.style.color='#00ffcc';
+
+  targetHint.style.display='block';
+  targetLabel.textContent=gridValues[targetIndex];
+
+  resultDiv.style.display='none';
+  retryBtn.style.display='none';
+
+  vrTargetText.setAttribute('value','找: '+gridValues[targetIndex]);
+  setVrHudVisible(true);
+
+  removeVrResult();
+
+  startTime=performance.now();
+  isRunning=true;
+  rafId=requestAnimationFrame(tick);
+}
+
+function doFinish(){
+
+  if(!isRunning) return;
+
+  isRunning=false;
+  gameState='result';
+
+  cancelAnimationFrame(rafId);
+
+  const t=formatTime(performance.now()-startTime);
+
+  hud.textContent='⏱ '+t;
+  hud.style.color='#ffcc00';
+
+  resultDiv.innerHTML=
+  `✓ ${t}<br>
+   <span style="font-size:20px;color:#ff4466">Errors: ${errorCount}</span><br>
+   <span style="font-size:16px;color:#ffffff88">找到目標！</span>`;
+
+  resultDiv.style.display='block';
+  retryBtn.style.display='block';
+  targetHint.style.display='none';
+
+  setVrHudVisible(false);
+
+  buildVrResult(t);
+}
+
+function doRetry(){
+  resultDiv.style.display='none';
+  retryBtn.style.display='none';
+  removeVrResult();
+  doStart();
+}
+
+retryBtn.onclick=doRetry;
+
+function buildVrResult(timeStr){
+
+  removeVrResult();
+
+  const rig=document.querySelector('#rig');
+  const cam=document.querySelector('#cam');
+
+  vrResultPanel=document.createElement('a-entity');
+
+  vrResultPanel.setAttribute('position','0 2.5 -11');
+
+  const bg=document.createElement('a-plane');
+  bg.setAttribute('width','3');
+  bg.setAttribute('height','1.4');
+  bg.setAttribute('color','#001122');
+  bg.setAttribute('opacity','0.93');
+  vrResultPanel.appendChild(bg);
+
+  const txt=document.createElement('a-text');
+  txt.setAttribute('value',
+    `✓ ${timeStr}\nErrors: ${errorCount}\n找到目標！`);
+  txt.setAttribute('align','center');
+  txt.setAttribute('width','6');
+  txt.setAttribute('color','#ffcc00');
+  txt.setAttribute('position','0 0.22 0.02');
+  vrResultPanel.appendChild(txt);
+
+  const rp=document.createElement('a-plane');
+  rp.setAttribute('id','vrRetryPlane');
+  rp.setAttribute('class','clickable');
+  rp.setAttribute('width','1.6');
+  rp.setAttribute('height','0.45');
+  rp.setAttribute('color','#003344');
+  rp.setAttribute('position','0 -0.52 0.01');
+  vrResultPanel.appendChild(rp);
+
+  const rt=document.createElement('a-text');
+  rt.setAttribute('value','↻ RETRY');
+  rt.setAttribute('align','center');
+  rt.setAttribute('width','4');
+  rt.setAttribute('color','#00ffcc');
+  rt.setAttribute('position','0 -0.52 0.03');
+  vrResultPanel.appendChild(rt);
+
+  rig.appendChild(vrResultPanel);
+  vrRetryMesh=rp;
+}
+
+function removeVrResult(){
+  if(vrResultPanel && vrResultPanel.parentNode){
+    vrResultPanel.parentNode.removeChild(vrResultPanel);
+  }
+  vrResultPanel=null;
+  vrRetryMesh=null;
+}
+
+document.querySelector('a-scene').addEventListener('loaded',()=>{
+
+  vrTimerText=document.getElementById('vrTimerText');
+  vrTargetText=document.getElementById('vrTargetText');
+
+  const cam=document.querySelector('#cam');
+  const rc=new THREE.Raycaster();
+  const mouse=new THREE.Vector2();
+
+  function getTargets(){
+
+    const arr=[];
+
+    if(startBtn.object3D.visible){
+      const sp=document.getElementById('startPlane');
+      sp.object3D.traverse(c=>{ if(c.isMesh) arr.push({mesh:c,type:'start'}); });
+    }
+
+    if(gameState==='playing' && planeMesh){
+      arr.push({mesh:planeMesh,type:'plane'});
+    }
+
+    if(gameState==='result' && vrRetryMesh){
+      vrRetryMesh.object3D.traverse(c=>{ if(c.isMesh) arr.push({mesh:c,type:'retry'}); });
+    }
+
+    return arr;
+  }
+
+  function handleHit(type,uv){
+
+    if(type==='start'){ doStart(); return; }
+    if(type==='retry'){ doRetry(); return; }
+
+    if(type==='plane'){
+      if(!uv) return;
+
+      const u=uv.x;
+      const v=1-uv.y;
+
+      const cell=cellData.find(c =>
+        u>=c.uMin && u<c.uMax &&
+        v>=c.vMin && v<c.vMax
+      );
+
+      if(!cell) return;
+
+      if(cell.index===targetIndex){
+        doFinish();
+      }else{
+        errorCount++;
+        hud.style.color='#ff4466';
+        setTimeout(()=>{
+          if(isRunning) hud.style.color='#00ffcc';
+        },200);
       }
+    }
+  }
 
-      document.querySelector('a-scene').addEventListener('loaded', () => {
-        const camEl = document.querySelector('#cam');
-        const raycaster = new THREE.Raycaster();
-        const mouse = new THREE.Vector2();
+  function fireRay(x,y){
 
-        function setMouse(e) {
-          mouse.x = (e.clientX / window.innerWidth) * 2 - 1;
-          mouse.y = -(e.clientY / window.innerHeight) * 2 + 1;
-          raycaster.setFromCamera(mouse, camEl.getObject3D('camera'));
-        }
+    mouse.x=(x/window.innerWidth)*2-1;
+    mouse.y=-(y/window.innerHeight)*2+1;
 
-        function getBtnMeshes() {
-          if (!startBtn.object3D.visible) return [];
-          const m = [];
-          startBtn.object3D.traverse(c => { if (c.isMesh) m.push(c); });
-          return m;
-        }
+    rc.setFromCamera(mouse,cam.getObject3D('camera'));
 
-        window.addEventListener('mouseup', (e) => {
-          if (e.button !== 0) return;
-          setMouse(e);
+    const targets=getTargets();
+    const hits=rc.intersectObjects(targets.map(t=>t.mesh),false);
 
-          if (startBtn.object3D.visible) {
-            if (raycaster.intersectObjects(getBtnMeshes()).length > 0) doStart();
+    if(!hits.length) return;
+
+    const t=targets.find(a=>a.mesh===hits[0].object);
+    if(t) handleHit(t.type,hits[0].uv);
+  }
+
+  window.addEventListener('mouseup',e=>{
+    if(e.button!==0) return;
+    fireRay(e.clientX,e.clientY);
+  });
+
+  ['rHand','lHand'].forEach(id=>{
+    const hand=document.getElementById(id);
+
+    hand.addEventListener('triggerdown',()=>{
+
+      const ray=hand.components.raycaster;
+      if(!ray || !ray.intersections.length) return;
+
+      const inter=ray.intersections[0];
+      const hit=inter.object;
+
+      const targets=getTargets();
+
+      for(const t of targets){
+
+        let cur=hit;
+
+        while(cur){
+          if(cur===t.mesh){
+            handleHit(t.type,inter.uv);
             return;
           }
+          cur=cur.parent;
+        }
+      }
+    });
+  });
 
-          if (!isRunning || !planeMesh) return;
-          const hits = raycaster.intersectObject(planeMesh);
-          if (!hits.length || !hits[0].uv) return;
-
-          const u = hits[0].uv.x;
-          const v = 1 - hits[0].uv.y; // 修正 Canvas 與 UV 的 Y 軸對應
-
-          const found = cellData.find(c => u >= c.uMin && u < c.uMax && v >= c.vMin && v < c.vMax);
-          if (found && found.index === targetIndex) doFinish();
-          else if (found) {
-            errorCount++; // 點擊錯誤，次數加 1
-            hud.style.color = '#ff4466';
-            setTimeout(() => { if(isRunning) hud.style.color = '#00ffcc'; }, 200);
-          }
-        });
-
-        window.addEventListener('mousemove', (e) => {
-          setMouse(e);
-          const btnHit = raycaster.intersectObjects(getBtnMeshes()).length > 0;
-          const planeHit = planeMesh ? raycaster.intersectObject(planeMesh).length > 0 : false;
-          document.body.style.cursor = (btnHit || planeHit) ? 'pointer' : 'default';
-        });
-      });
-
-      retryBtn.addEventListener('click', () => {
-  resultDiv.style.display = 'none';
-  retryBtn.style.display = 'none';
-  // --- 補上這行，確保重來時回到初始身高 1.6m ---
-  document.querySelector('#cam').setAttribute('position', {x: 0, y: 1.6, z: 0});
-  // -------------------------------------------
-  doStart();
 });
-    </script>
-  </body>
+</script>
+</body>
 </html>
