@@ -5,92 +5,20 @@
 <link rel="icon" href="data:,">
 <title>Plane VR</title>
 <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-
 <style>
 body { margin:0; overflow:hidden; }
-
-#hud{
-  position:fixed; top:18px; left:22px;
-  z-index:999; pointer-events:none;
-  font-family:'Courier New', monospace;
-  font-size:22px; font-weight:bold;
-  color:#00ffcc; letter-spacing:2px;
-  display:none;
-}
-
-#crosshair{
-  position:fixed; top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  width:18px; height:18px;
-  pointer-events:none; z-index:999;
-}
-#crosshair::before,#crosshair::after{
-  content:'';
-  position:absolute;
-  background:#00ffcc;
-  opacity:.85;
-}
-#crosshair::before{
-  width:2px; height:100%;
-  left:50%; top:0;
-  transform:translateX(-50%);
-}
-#crosshair::after{
-  height:2px; width:100%;
-  top:50%; left:0;
-  transform:translateY(-50%);
-}
-
-#result{
-  position:fixed;
-  top:50%; left:50%;
-  transform:translate(-50%,-50%);
-  z-index:999; pointer-events:none;
-  font-family:'Courier New', monospace;
-  font-size:36px; font-weight:bold;
-  color:#ffcc00;
-  text-align:center;
-  display:none;
-}
-
-#target-hint{
-  position:fixed;
-  top:18px; right:22px;
-  z-index:999; pointer-events:none;
-  font-family:'Courier New', monospace;
-  font-size:15px;
-  color:#ffffffaa;
-  text-align:right;
-  display:none;
-}
-#target-hint span{
-  display:block;
-  color:#ff4466;
-  font-size:30px;
-  font-weight:bold;
-  letter-spacing:2px;
-}
-
-#retryBtn{
-  position:fixed;
-  top:calc(50% + 80px);
-  left:50%;
-  transform:translateX(-50%);
-  z-index:999;
-  font-family:'Courier New', monospace;
-  font-size:20px;
-  font-weight:bold;
-  color:#00ffcc;
-  border:2px solid #00ffcc;
-  padding:8px 20px;
-  cursor:pointer;
-  display:none;
-}
+#hud{ position:fixed; top:18px; left:22px; z-index:999; pointer-events:none; font-family:'Courier New',monospace; font-size:22px; font-weight:bold; color:#00ffcc; letter-spacing:2px; display:none; }
+#crosshair{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); width:18px; height:18px; pointer-events:none; z-index:999; }
+#crosshair::before,#crosshair::after{ content:''; position:absolute; background:#00ffcc; opacity:.85; }
+#crosshair::before{ width:2px; height:100%; left:50%; top:0; transform:translateX(-50%); }
+#crosshair::after{ height:2px; width:100%; top:50%; left:0; transform:translateY(-50%); }
+#result{ position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); z-index:999; pointer-events:none; font-family:'Courier New',monospace; font-size:36px; font-weight:bold; color:#ffcc00; text-align:center; display:none; }
+#target-hint{ position:fixed; top:18px; right:22px; z-index:999; pointer-events:none; font-family:'Courier New',monospace; font-size:15px; color:#ffffffaa; text-align:right; display:none; }
+#target-hint span{ display:block; color:#ff4466; font-size:30px; font-weight:bold; letter-spacing:2px; }
+#retryBtn{ position:fixed; top:calc(50% + 80px); left:50%; transform:translateX(-50%); z-index:999; font-family:'Courier New',monospace; font-size:20px; font-weight:bold; color:#00ffcc; border:2px solid #00ffcc; padding:8px 20px; cursor:pointer; display:none; }
 </style>
 </head>
-
 <body>
-
 <div id="hud">⏱ 00:00.00</div>
 <div id="crosshair"></div>
 <div id="result"></div>
@@ -98,77 +26,47 @@ body { margin:0; overflow:hidden; }
 <div id="retryBtn">↻ RETRY</div>
 
 <a-scene background="color:#0a0a1a" vr-mode-ui="enabled:true">
-
   <a-entity id="rig" position="0 0 0">
-
-    <a-entity id="cam"
-      camera
-      position="0 2.5 0"
+    <a-entity id="cam" camera position="0 2.5 0"
       look-controls="pointerLockEnabled:false; magicWindowTrackingEnabled:true; touchEnabled:true"
       wasd-controls>
     </a-entity>
-
-    <!-- VR HUD：掛在 rig 下，JS 每幀更新 position + quaternion -->
-    <a-entity id="vrHud" visible="false">
-      <a-text id="vrTimerText"
-        value="⏱ 00:00.00"
-        color="#00ffcc"
-        width="1.5"
-        align="right"
-        position="-0.06 0 0"></a-text>
-      <a-text value="|" color="#ffffff33" width="0.6"
-        align="center" position="0 0 0"></a-text>
-      <a-text id="vrTargetText"
-        value="找: --"
-        color="#ff4466"
-        width="1.5"
-        align="left"
-        position="0.06 0 0"></a-text>
-    </a-entity>
-
-    <a-entity id="rHand"
-      laser-controls="hand:right"
+    <a-entity id="rHand" laser-controls="hand:right"
       raycaster="objects:.vrRayTarget; far:40; lineColor:#00ffcc; lineOpacity:0.8">
     </a-entity>
-
-    <a-entity id="lHand"
-      laser-controls="hand:left"
+    <a-entity id="lHand" laser-controls="hand:left"
       raycaster="objects:.vrRayTarget; far:40; lineColor:#00ffcc; lineOpacity:0.4">
     </a-entity>
-
   </a-entity>
 
   <a-entity id="startBtn" position="0 2.5 -2.5">
-    <a-plane id="startPlane"
-      class="clickable vrRayTarget"
-      width="1.2"
-      height="0.45"
-      color="#003344"
-      opacity="0.95"></a-plane>
-    <a-plane
-      width="1.26"
-      height="0.51"
-      color="#00ffcc"
-      opacity="0.25"
-      position="0 0 -0.02"></a-plane>
-    <a-text value="▶  START"
-      align="center"
-      color="#00ffcc"
-      width="3.5"
-      position="0 0 0.03"
+    <a-plane id="startPlane" class="clickable vrRayTarget" width="1.2" height="0.45" color="#003344" opacity="0.95"></a-plane>
+    <a-plane width="1.26" height="0.51" color="#00ffcc" opacity="0.25" position="0 0 -0.02"></a-plane>
+    <a-text value="▶  START" align="center" color="#00ffcc" width="3.5" position="0 0 0.03"
       font="https://cdn.aframe.io/fonts/Exo2Bold.fnt"></a-text>
   </a-entity>
 
+  <!-- 平面牆 position="0 2.5 -8"，牆高5，頂部世界 y=5 -->
+  <!-- VR HUD 放在牆正上方，世界 y=5.8，z=-8（與牆同）-->
   <a-entity id="planeRoot" position="0 2.5 -8" visible="false">
     <a-entity id="planeWall"></a-entity>
     <a-entity id="planeProxy" class="vrRayTarget"></a-entity>
+
+    <!-- HUD 固定在牆頂上方，local y=3.0（世界y=5.5），不遮牆 -->
+    <a-entity id="vrHud" visible="false" position="0 2.5 1.2">
+      <!-- 背景板 -->
+      <a-plane width="3.5" height="0.55" color="#000a12" opacity="0.82" position="0 0 -0.02"></a-plane>
+      <!-- 計時器 -->
+      <a-text id="vrTimerText" value="⏱ 00:00.00" color="#00ffcc" width="5" align="left" position="-1.6 0 0"></a-text>
+      <!-- 分隔 -->
+      <a-text value="|" color="#ffffff44" width="0.8" align="center" position="0 0 0"></a-text>
+      <!-- 題目 -->
+      <a-text id="vrTargetText" value="找: --" color="#ff4466" width="5" align="right" position="1.6 0 0"></a-text>
+    </a-entity>
   </a-entity>
 
-  <a-plane rotation="-90 0 0" width="30" height="30"
-    color="#080818"></a-plane>
-
+  <a-plane rotation="-90 0 0" width="30" height="30" color="#080818"></a-plane>
   <a-light type="ambient" intensity="2.5"></a-light>
-
 </a-scene>
 
 <script>
@@ -180,8 +78,7 @@ let gridValues=[], targetIndex=-1, cellData=[];
 let planeMesh=null, proxyMesh=null, canvasTex=null, canvas, ctx;
 let errorCount=0, startTime=0, isRunning=false, rafId=null;
 let gameState='idle';
-
-let vrRetryMesh=null, vrResultPanel=null;
+let vrRetryMesh=null, vrRetryMeshObj=null, vrResultPanel=null;
 let vrTimerText=null, vrTargetText=null;
 
 const hud=document.getElementById('hud');
@@ -189,162 +86,78 @@ const resultDiv=document.getElementById('result');
 const targetHint=document.getElementById('target-hint');
 const targetLabel=document.getElementById('targetLabel');
 const retryBtn=document.getElementById('retryBtn');
-
 const startBtn=document.querySelector('#startBtn');
 const planeRoot=document.querySelector('#planeRoot');
 const planeWall=document.querySelector('#planeWall');
 const planeProxyEl=document.querySelector('#planeProxy');
 const vrHudEl=document.getElementById('vrHud');
 
-// 暫存向量，避免每幀 GC（與 curved 版一致）
-const _camWorld=new THREE.Vector3();
-const _rigWorld=new THREE.Vector3();
-const _forward=new THREE.Vector3();
-const _hudWorld=new THREE.Vector3();
-const _camQuat=new THREE.Quaternion();
-const _rigQuat=new THREE.Quaternion();
-const _invRigQuat=new THREE.Quaternion();
-
 function initCanvas(){
   canvas=document.createElement('canvas');
-  canvas.width=TEX_W;
-  canvas.height=TEX_H;
+  canvas.width=TEX_W; canvas.height=TEX_H;
   ctx=canvas.getContext('2d');
 }
 
 function generateGrid(){
   gridValues=[];
-  for(let i=0;i<ROWS*COLS;i++){
-    gridValues.push((Math.random()*99.999).toFixed(2));
-  }
+  for(let i=0;i<ROWS*COLS;i++) gridValues.push((Math.random()*99.999).toFixed(2));
   targetIndex=Math.floor(Math.random()*ROWS*COLS);
 }
 
 function drawTexture(){
-  ctx.fillStyle='#040412';
-  ctx.fillRect(0,0,TEX_W,TEX_H);
-
-  ctx.strokeStyle='#112233';
-  ctx.lineWidth=2;
-
-  for(let c=1;c<COLS;c++){
-    const x=c*(TEX_W/COLS);
-    ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,TEX_H); ctx.stroke();
-  }
-  for(let r=1;r<ROWS;r++){
-    const y=r*(TEX_H/ROWS);
-    ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(TEX_W,y); ctx.stroke();
-  }
-
+  ctx.fillStyle='#040412'; ctx.fillRect(0,0,TEX_W,TEX_H);
+  ctx.strokeStyle='#112233'; ctx.lineWidth=2;
+  for(let c=1;c<COLS;c++){const x=c*(TEX_W/COLS);ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,TEX_H);ctx.stroke();}
+  for(let r=1;r<ROWS;r++){const y=r*(TEX_H/ROWS);ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(TEX_W,y);ctx.stroke();}
   cellData=[];
-  const cellW=TEX_W/COLS;
-  const cellH=TEX_H/ROWS;
-
+  const cellW=TEX_W/COLS, cellH=TEX_H/ROWS;
   for(let row=0;row<ROWS;row++){
     for(let col=0;col<COLS;col++){
       const idx=row*COLS+col;
-      const cx=(col+.5)*cellW;
-      const cy=(row+.5)*cellH;
-
+      const cx=(col+.5)*cellW, cy=(row+.5)*cellH;
       ctx.font='bold 115px "Courier New",monospace';
-      ctx.textAlign='center';
-      ctx.textBaseline='middle';
-      ctx.fillStyle='#00eebb';
-      ctx.shadowColor='#00eebb66';
-      ctx.shadowBlur=12;
-      ctx.fillText(gridValues[idx],cx,cy);
-      ctx.shadowBlur=0;
-
-      cellData.push({
-        index:idx,
-        uMin:col/COLS,
-        uMax:(col+1)/COLS,
-        vMin:row/ROWS,
-        vMax:(row+1)/ROWS
-      });
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillStyle='#00eebb'; ctx.shadowColor='#00eebb66'; ctx.shadowBlur=12;
+      ctx.fillText(gridValues[idx],cx,cy); ctx.shadowBlur=0;
+      cellData.push({index:idx,uMin:col/COLS,uMax:(col+1)/COLS,vMin:row/ROWS,vMax:(row+1)/ROWS});
     }
   }
+  const g=ctx.createLinearGradient(0,0,0,TEX_H);
+  g.addColorStop(0,'rgba(0,200,180,0.08)'); g.addColorStop(.5,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(0,200,180,0.08)');
+  ctx.fillStyle=g; ctx.fillRect(0,0,TEX_W,TEX_H);
   if(canvasTex) canvasTex.needsUpdate=true;
 }
 
 function buildPlane(){
   if(planeMesh){
     planeWall.object3D.remove(planeMesh);
-    planeMesh.geometry.dispose();
-    planeMesh.material.dispose();
-    planeMesh=null;
+    planeMesh.geometry.dispose(); planeMesh.material.dispose(); planeMesh=null;
   }
   if(proxyMesh){
     planeProxyEl.object3D.remove(proxyMesh);
-    proxyMesh.geometry.dispose();
-    proxyMesh.material.dispose();
-    proxyMesh=null;
+    proxyMesh.geometry.dispose(); proxyMesh.material.dispose(); proxyMesh=null;
   }
-
   const geo=new THREE.PlaneGeometry(PLANE_W,PLANE_H);
-
   canvasTex=new THREE.CanvasTexture(canvas);
   canvasTex.anisotropy=16;
   canvasTex.minFilter=THREE.LinearMipmapLinearFilter;
   canvasTex.magFilter=THREE.LinearFilter;
-
-  planeMesh=new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
-    map:canvasTex, side:THREE.FrontSide
-  }));
+  planeMesh=new THREE.Mesh(geo,new THREE.MeshBasicMaterial({map:canvasTex,side:THREE.FrontSide}));
   planeWall.object3D.add(planeMesh);
-
-  proxyMesh=new THREE.Mesh(
-    geo.clone(),
-    new THREE.MeshBasicMaterial({transparent:true, opacity:0, side:THREE.FrontSide, depthWrite:false})
-  );
+  proxyMesh=new THREE.Mesh(geo.clone(),new THREE.MeshBasicMaterial({transparent:true,opacity:0,side:THREE.FrontSide,depthWrite:false}));
   planeProxyEl.object3D.add(proxyMesh);
-
   planeRoot.setAttribute('visible','true');
   drawTexture();
-
   setTimeout(()=>{
     ['rHand','lHand'].forEach(id=>{
       const hand=document.getElementById(id);
-      if(hand && hand.components.raycaster) hand.components.raycaster.refreshObjects();
+      if(hand&&hand.components.raycaster) hand.components.raycaster.refreshObjects();
     });
   },200);
 }
 
-// 與 curved 版完全一致的 HUD 更新函式
-function updateVrHudPosition(){
-  if(!vrHudEl || vrHudEl.getAttribute('visible')==='false') return;
-  const cam=document.querySelector('#cam');
-  const rig=document.querySelector('#rig');
-  if(!cam||!rig) return;
-
-  cam.object3D.getWorldPosition(_camWorld);
-  cam.object3D.getWorldQuaternion(_camQuat);
-
-  _forward.set(0,0,-1).applyQuaternion(_camQuat);
-  _forward.y=0;
-  if(_forward.lengthSq()<0.0001) return;
-  _forward.normalize();
-
-  _hudWorld.copy(_camWorld).addScaledVector(_forward, 1.4);
-  _hudWorld.y=_camWorld.y+0.25;
-
-  rig.object3D.getWorldPosition(_rigWorld);
-  vrHudEl.object3D.position.set(
-    _hudWorld.x-_rigWorld.x,
-    _hudWorld.y-_rigWorld.y,
-    _hudWorld.z-_rigWorld.z
-  );
-
-  rig.object3D.getWorldQuaternion(_rigQuat);
-  _invRigQuat.copy(_rigQuat).invert();
-
-  const _faceDir=new THREE.Vector3().subVectors(_camWorld, _hudWorld).normalize();
-  const _worldFaceQuat=new THREE.Quaternion().setFromUnitVectors(
-    new THREE.Vector3(0,0,-1),
-    _faceDir
-  );
-
-  vrHudEl.object3D.quaternion.copy(_invRigQuat).multiply(_worldFaceQuat);
+function setVrHudVisible(v){
+  vrHudEl.setAttribute('visible',v?'true':'false');
 }
 
 function formatTime(ms){
@@ -356,32 +169,24 @@ function tick(){
   const t=formatTime(performance.now()-startTime);
   hud.textContent='⏱ '+t;
   if(vrTimerText) vrTimerText.setAttribute('value','⏱ '+t);
-  updateVrHudPosition();
   rafId=requestAnimationFrame(tick);
 }
 
-function setVrHudVisible(v){
-  vrHudEl.setAttribute('visible',v?'true':'false');
-}
-
 function doStart(){
-  errorCount=0;
-  gameState='playing';
-
+  errorCount=0; gameState='playing';
   generateGrid();
   if(!canvas) initCanvas();
   buildPlane();
 
   const cam=document.querySelector('#cam');
   const lc=cam.components['look-controls'];
-  if(lc){ lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0; }
+  if(lc){lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0;}
   cam.setAttribute('position',{x:0,y:2.5,z:0});
 
   startBtn.setAttribute('visible','false');
   removeVrResult();
 
-  hud.style.display='block';
-  hud.style.color='#00ffcc';
+  hud.style.display='block'; hud.style.color='#00ffcc';
   targetHint.style.display='block';
   targetLabel.textContent=gridValues[targetIndex];
   resultDiv.style.display='none';
@@ -389,28 +194,21 @@ function doStart(){
 
   if(vrTargetText) vrTargetText.setAttribute('value','找: '+gridValues[targetIndex]);
   setVrHudVisible(true);
-
-  startTime=performance.now();
-  isRunning=true;
+  startTime=performance.now(); isRunning=true;
   rafId=requestAnimationFrame(tick);
 }
 
 function doFinish(){
   if(!isRunning) return;
-  isRunning=false;
-  gameState='result';
+  isRunning=false; gameState='result';
   cancelAnimationFrame(rafId);
-
   const t=formatTime(performance.now()-startTime);
-  hud.textContent='⏱ '+t;
-  hud.style.color='#ffcc00';
-
+  hud.textContent='⏱ '+t; hud.style.color='#ffcc00';
+  if(vrTimerText) vrTimerText.setAttribute('value','⏱ '+t);
   resultDiv.innerHTML=`✓ &nbsp;${t}<br><span style="font-size:20px;color:#ff4466">Errors: ${errorCount}</span><br><span style="font-size:16px;color:#ffffff88">找到目標！</span>`;
-
   resultDiv.style.display='block';
-  retryBtn.style.display='block';
   targetHint.style.display='none';
-
+  retryBtn.style.display='block';
   setVrHudVisible(false);
   buildVrResult(t);
 }
@@ -427,24 +225,10 @@ retryBtn.addEventListener('click', doRetry);
 
 function buildVrResult(timeStr){
   removeVrResult();
-
-  const rig=document.querySelector('#rig');
-  const cam=document.querySelector('#cam');
-
   vrResultPanel=document.createElement('a-entity');
   vrResultPanel.setAttribute('id','vrResultPanel');
-
-  cam.object3D.getWorldPosition(_camWorld);
-  cam.object3D.getWorldQuaternion(_camQuat);
-  _forward.set(0,0,-1).applyQuaternion(_camQuat);
-  _forward.y=0; _forward.normalize();
-
-  const panelWorld=_camWorld.clone().addScaledVector(_forward, 7);
-  rig.object3D.getWorldPosition(_rigWorld);
-
-  vrResultPanel.setAttribute('position',
-    `${panelWorld.x-_rigWorld.x} ${_camWorld.y-_rigWorld.y} ${panelWorld.z-_rigWorld.z}`
-  );
+  // 結果面板放在牆前方，世界座標固定
+  vrResultPanel.setAttribute('position','0 2.5 -6');
   vrResultPanel.setAttribute('look-at','#cam');
 
   const bg=document.createElement('a-plane');
@@ -472,27 +256,25 @@ function buildVrResult(timeStr){
   rtxt.setAttribute('width','4'); rtxt.setAttribute('position','0 -0.52 0.03');
   vrResultPanel.appendChild(rtxt);
 
-  rig.appendChild(vrResultPanel);
+  document.querySelector('a-scene').appendChild(vrResultPanel);
   vrRetryMesh=rp;
 
   setTimeout(()=>{
+    vrRetryMeshObj=null;
+    if(rp.object3D) rp.object3D.traverse(c=>{if(c.isMesh&&!vrRetryMeshObj) vrRetryMeshObj=c;});
     ['rHand','lHand'].forEach(id=>{
       const hand=document.getElementById(id);
       if(hand&&hand.components.raycaster) hand.components.raycaster.refreshObjects();
     });
-  },100);
+  },150);
 }
 
 function removeVrResult(){
-  if(vrResultPanel && vrResultPanel.parentNode){
-    vrResultPanel.parentNode.removeChild(vrResultPanel);
-  }
-  vrResultPanel=null;
-  vrRetryMesh=null;
+  if(vrResultPanel&&vrResultPanel.parentNode) vrResultPanel.parentNode.removeChild(vrResultPanel);
+  vrResultPanel=null; vrRetryMesh=null; vrRetryMeshObj=null;
 }
 
 document.querySelector('a-scene').addEventListener('loaded',()=>{
-
   vrTimerText=document.getElementById('vrTimerText');
   vrTargetText=document.getElementById('vrTargetText');
 
@@ -504,13 +286,11 @@ document.querySelector('a-scene').addEventListener('loaded',()=>{
     const arr=[];
     if(startBtn.object3D.visible){
       const sp=document.getElementById('startPlane');
-      if(sp) sp.object3D.traverse(c=>{ if(c.isMesh) arr.push({mesh:c,type:'start'}); });
+      if(sp) sp.object3D.traverse(c=>{if(c.isMesh) arr.push({mesh:c,type:'start'});});
     }
-    if(gameState==='playing' && planeMesh){
-      arr.push({mesh:planeMesh,type:'plane'});
-    }
-    if(gameState==='result' && vrRetryMesh){
-      vrRetryMesh.object3D.traverse(c=>{ if(c.isMesh) arr.push({mesh:c,type:'retry'}); });
+    if(gameState==='playing'&&planeMesh) arr.push({mesh:planeMesh,type:'plane'});
+    if(gameState==='result'&&vrRetryMesh){
+      vrRetryMesh.object3D.traverse(c=>{if(c.isMesh) arr.push({mesh:c,type:'retry'});});
     }
     return arr;
   }
@@ -518,19 +298,13 @@ document.querySelector('a-scene').addEventListener('loaded',()=>{
   function handleHit(type,uv){
     if(type==='start'){ doStart(); return; }
     if(type==='retry'){ doRetry(); return; }
-
     if(type==='plane'){
       if(!uv) return;
       const u=uv.x, v=1-uv.y;
       const cell=cellData.find(c=>u>=c.uMin&&u<c.uMax&&v>=c.vMin&&v<c.vMax);
       if(!cell) return;
-      if(cell.index===targetIndex){
-        doFinish();
-      } else {
-        errorCount++;
-        hud.style.color='#ff4466';
-        setTimeout(()=>{ if(isRunning) hud.style.color='#00ffcc'; },200);
-      }
+      if(cell.index===targetIndex){ doFinish(); }
+      else{ errorCount++; hud.style.color='#ff4466'; setTimeout(()=>{if(isRunning) hud.style.color='#00ffcc';},200); }
     }
   }
 
@@ -546,18 +320,14 @@ document.querySelector('a-scene').addEventListener('loaded',()=>{
   }
 
   let downPos={x:0,y:0};
-  window.addEventListener('mousedown', e=>{
-    if(e.button!==0) return;
-    downPos={x:e.clientX,y:e.clientY};
-  });
+  window.addEventListener('mousedown',e=>{if(e.button!==0) return; downPos={x:e.clientX,y:e.clientY};});
   window.addEventListener('mouseup',e=>{
     if(e.button!==0) return;
     const dx=e.clientX-downPos.x, dy=e.clientY-downPos.y;
     if(Math.sqrt(dx*dx+dy*dy)>8) return;
     fireRay(e.clientX,e.clientY);
   });
-
-  window.addEventListener('mousemove', e=>{
+  window.addEventListener('mousemove',e=>{
     mouse.x=(e.clientX/window.innerWidth)*2-1;
     mouse.y=-(e.clientY/window.innerHeight)*2+1;
     rc.setFromCamera(mouse,cam.getObject3D('camera'));
@@ -571,26 +341,39 @@ document.querySelector('a-scene').addEventListener('loaded',()=>{
     if(!hand) return;
     hand.addEventListener('triggerdown',()=>{
       const ray=hand.components.raycaster;
-      if(!ray || !ray.intersections.length) return;
+      if(!ray||!ray.intersections.length) return;
       const inter=ray.intersections[0];
-      const hit=inter.object;
+      const hitObj=inter.object;
 
-      const nonPlane=getTargets().filter(t=>t.type!=='plane');
-      for(const t of nonPlane){
-        let cur=hit;
-        while(cur){ if(cur===t.mesh){ handleHit(t.type,inter.uv); return; } cur=cur.parent; }
+      // START
+      if(startBtn.object3D.visible){
+        const sp=document.getElementById('startPlane');
+        let found=false;
+        sp&&sp.object3D.traverse(c=>{if(c===hitObj) found=true;});
+        if(found){ doStart(); return; }
       }
 
-      if(gameState==='playing' && proxyMesh){
-        let cur=hit;
+      // 數字牆 proxy
+      if(gameState==='playing'&&proxyMesh){
+        let cur=hitObj;
         while(cur){ if(cur===proxyMesh){ handleHit('plane',inter.uv); return; } cur=cur.parent; }
+      }
+
+      // RETRY（雙保險）
+      if(gameState==='result'){
+        if(vrRetryMeshObj&&hitObj===vrRetryMeshObj){ doRetry(); return; }
+        if(vrRetryMesh){
+          let found=false;
+          vrRetryMesh.object3D.traverse(c=>{if(c===hitObj) found=true;});
+          if(found){ doRetry(); return; }
+        }
       }
     });
   });
 
   setTimeout(()=>{
     const lc=cam.components['look-controls'];
-    if(lc){lc.yawObject.rotation.y=0;lc.pitchObject.rotation.x=0;}
+    if(lc){lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0;}
   },0);
 });
 </script>
