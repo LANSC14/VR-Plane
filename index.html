@@ -25,42 +25,38 @@ body { margin:0; overflow:hidden; }
 <div id="target-hint">找到並點擊：<span id="targetLabel">--</span></div>
 <div id="retryBtn">↻ RETRY</div>
 
-<a-scene background="color:#0a0a1a" vr-mode-ui="enabled:true">
+<a-scene timer-logic background="color:#0a0a1a" vr-mode-ui="enabled:true">
+  <!-- rig y=0：WebXR floor-level，HMD 自動在約 y=1.6 -->
   <a-entity id="rig" position="0 0 0">
-    <a-entity id="cam" camera position="0 2.5 0"
+    <a-entity id="cam" camera position="0 1.6 0"
       look-controls="pointerLockEnabled:false; magicWindowTrackingEnabled:true; touchEnabled:true"
       wasd-controls>
     </a-entity>
+    <!-- raycaster 不限 objects，讓 triggerdown 自己篩 -->
     <a-entity id="rHand" laser-controls="hand:right"
-      raycaster="objects:.vrRayTarget; far:40; lineColor:#00ffcc; lineOpacity:0.8">
+      raycaster="far:22; lineColor:#00ffcc; lineOpacity:0.8">
     </a-entity>
     <a-entity id="lHand" laser-controls="hand:left"
-      raycaster="objects:.vrRayTarget; far:40; lineColor:#00ffcc; lineOpacity:0.4">
+      raycaster="far:22; lineColor:#00ffcc; lineOpacity:0.4">
     </a-entity>
   </a-entity>
 
-  <a-entity id="startBtn" position="0 2.5 -2.5">
+  <a-entity id="startBtn" position="0 1.6 -2.5">
     <a-plane id="startPlane" class="clickable vrRayTarget" width="1.2" height="0.45" color="#003344" opacity="0.95"></a-plane>
     <a-plane width="1.26" height="0.51" color="#00ffcc" opacity="0.25" position="0 0 -0.02"></a-plane>
     <a-text value="▶  START" align="center" color="#00ffcc" width="3.5" position="0 0 0.03"
       font="https://cdn.aframe.io/fonts/Exo2Bold.fnt"></a-text>
   </a-entity>
 
-  <!-- 平面牆 position="0 2.5 -8"，牆高5，頂部世界 y=5 -->
-  <!-- VR HUD 放在牆正上方，世界 y=5.8，z=-8（與牆同）-->
+  <!-- planeRoot y=2.5 配合眼睛高度 -->
   <a-entity id="planeRoot" position="0 2.5 -8" visible="false">
     <a-entity id="planeWall"></a-entity>
-    <a-entity id="planeProxy" class="vrRayTarget"></a-entity>
+    <a-entity id="planeProxy"></a-entity>
 
-    <!-- HUD 固定在牆頂上方，local y=3.0（世界y=5.5），不遮牆 -->
     <a-entity id="vrHud" visible="false" position="0 2.5 1.2">
-      <!-- 背景板 -->
       <a-plane width="3.5" height="0.55" color="#000a12" opacity="0.82" position="0 0 -0.02"></a-plane>
-      <!-- 計時器 -->
       <a-text id="vrTimerText" value="⏱ 00:00.00" color="#00ffcc" width="5" align="left" position="-1.6 0 0"></a-text>
-      <!-- 分隔 -->
       <a-text value="|" color="#ffffff44" width="0.8" align="center" position="0 0 0"></a-text>
-      <!-- 題目 -->
       <a-text id="vrTargetText" value="找: --" color="#ff4466" width="5" align="right" position="1.6 0 0"></a-text>
     </a-entity>
   </a-entity>
@@ -76,7 +72,8 @@ const TEX_W=8192, TEX_H=2048;
 
 let gridValues=[], targetIndex=-1, cellData=[];
 let planeMesh=null, proxyMesh=null, canvasTex=null, canvas, ctx;
-let errorCount=0, startTime=0, isRunning=false, rafId=null;
+let errorCount=0, startTime=0;
+window.isRunning=false;
 let gameState='idle';
 let vrRetryMesh=null, vrRetryMeshObj=null, vrResultPanel=null;
 let vrTimerText=null, vrTargetText=null;
@@ -91,6 +88,33 @@ const planeRoot=document.querySelector('#planeRoot');
 const planeWall=document.querySelector('#planeWall');
 const planeProxyEl=document.querySelector('#planeProxy');
 const vrHudEl=document.getElementById('vrHud');
+const sceneEl=document.querySelector('a-scene');
+
+// ✅ timer-logic component — 掛在 a-scene 上，每幀由 A-Frame 驅動（VR 模式下也保證跑）
+AFRAME.registerComponent('timer-logic', {
+  init: function () {
+    this.hudText = document.getElementById('hud');
+    this.vrTimer = null;
+    this.vrTarget = null;
+    this.lastTarget = '';
+  },
+  tick: function () {
+    if (!window.isRunning) return;
+    const t = formatTime(performance.now() - startTime);
+    if (this.hudText) this.hudText.textContent = '⏱ ' + t;
+    if (!this.vrTimer) {
+      this.vrTimer = document.querySelector('#vrTimerText');
+      if (!this.vrTimer) return;
+    }
+    if (!this.vrTarget) this.vrTarget = document.querySelector('#vrTargetText');
+    this.vrTimer.setAttribute('value', '⏱ ' + t);
+    const targetVal = gridValues[targetIndex] ? '找: ' + gridValues[targetIndex] : '找: --';
+    if (this.vrTarget && this.lastTarget !== targetVal) {
+      this.vrTarget.setAttribute('value', targetVal);
+      this.lastTarget = targetVal;
+    }
+  }
+});
 
 function initCanvas(){
   canvas=document.createElement('canvas');
@@ -148,12 +172,6 @@ function buildPlane(){
   planeProxyEl.object3D.add(proxyMesh);
   planeRoot.setAttribute('visible','true');
   drawTexture();
-  setTimeout(()=>{
-    ['rHand','lHand'].forEach(id=>{
-      const hand=document.getElementById(id);
-      if(hand&&hand.components.raycaster) hand.components.raycaster.refreshObjects();
-    });
-  },200);
 }
 
 function setVrHudVisible(v){
@@ -164,24 +182,19 @@ function formatTime(ms){
   return `${Math.floor(ms/60000).toString().padStart(2,'0')}:${Math.floor((ms%60000)/1000).toString().padStart(2,'0')}.${Math.floor((ms%1000)/10).toString().padStart(2,'0')}`;
 }
 
-function tick(){
-  if(!isRunning) return;
-  const t=formatTime(performance.now()-startTime);
-  hud.textContent='⏱ '+t;
-  if(vrTimerText) vrTimerText.setAttribute('value','⏱ '+t);
-  rafId=requestAnimationFrame(tick);
-}
-
 function doStart(){
   errorCount=0; gameState='playing';
   generateGrid();
   if(!canvas) initCanvas();
   buildPlane();
 
-  const cam=document.querySelector('#cam');
-  const lc=cam.components['look-controls'];
-  if(lc){lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0;}
-  cam.setAttribute('position',{x:0,y:2.5,z:0});
+  // VR 模式：完全不碰 camera，讓 HMD 控制
+  if(!sceneEl.is('vr-mode')){
+    const cam=document.querySelector('#cam');
+    const lc=cam.components['look-controls'];
+    if(lc){lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0;}
+    cam.setAttribute('position',{x:0,y:1.6,z:0});
+  }
 
   startBtn.setAttribute('visible','false');
   removeVrResult();
@@ -192,16 +205,15 @@ function doStart(){
   resultDiv.style.display='none';
   retryBtn.style.display='none';
 
-  if(vrTargetText) vrTargetText.setAttribute('value','找: '+gridValues[targetIndex]);
   setVrHudVisible(true);
-  startTime=performance.now(); isRunning=true;
-  rafId=requestAnimationFrame(tick);
+  // ✅ 只設 startTime / isRunning，由 timer-logic component 的 tick 驅動
+  startTime=performance.now();
+  window.isRunning=true;
 }
 
 function doFinish(){
-  if(!isRunning) return;
-  isRunning=false; gameState='result';
-  cancelAnimationFrame(rafId);
+  if(!window.isRunning) return;
+  window.isRunning=false; gameState='result';
   const t=formatTime(performance.now()-startTime);
   hud.textContent='⏱ '+t; hud.style.color='#ffcc00';
   if(vrTimerText) vrTimerText.setAttribute('value','⏱ '+t);
@@ -227,9 +239,7 @@ function buildVrResult(timeStr){
   removeVrResult();
   vrResultPanel=document.createElement('a-entity');
   vrResultPanel.setAttribute('id','vrResultPanel');
-  // 結果面板放在牆前方，世界座標固定
-  vrResultPanel.setAttribute('position','0 2.5 -6');
-  vrResultPanel.setAttribute('look-at','#cam');
+  vrResultPanel.setAttribute('position','0 1.6 -3');
 
   const bg=document.createElement('a-plane');
   bg.setAttribute('width','3'); bg.setAttribute('height','1.4');
@@ -262,10 +272,6 @@ function buildVrResult(timeStr){
   setTimeout(()=>{
     vrRetryMeshObj=null;
     if(rp.object3D) rp.object3D.traverse(c=>{if(c.isMesh&&!vrRetryMeshObj) vrRetryMeshObj=c;});
-    ['rHand','lHand'].forEach(id=>{
-      const hand=document.getElementById(id);
-      if(hand&&hand.components.raycaster) hand.components.raycaster.refreshObjects();
-    });
   },150);
 }
 
@@ -304,7 +310,7 @@ document.querySelector('a-scene').addEventListener('loaded',()=>{
       const cell=cellData.find(c=>u>=c.uMin&&u<c.uMax&&v>=c.vMin&&v<c.vMax);
       if(!cell) return;
       if(cell.index===targetIndex){ doFinish(); }
-      else{ errorCount++; hud.style.color='#ff4466'; setTimeout(()=>{if(isRunning) hud.style.color='#00ffcc';},200); }
+      else{ errorCount++; hud.style.color='#ff4466'; setTimeout(()=>{if(window.isRunning) hud.style.color='#00ffcc';},200); }
     }
   }
 
@@ -336,44 +342,48 @@ document.querySelector('a-scene').addEventListener('loaded',()=>{
     document.body.style.cursor=h.length?'pointer':'default';
   });
 
+  // ✅ VR controller：用底層 Three.js raycaster 直接打所有目標 mesh
   ['rHand','lHand'].forEach(id=>{
     const hand=document.getElementById(id);
     if(!hand) return;
     hand.addEventListener('triggerdown',()=>{
-      const ray=hand.components.raycaster;
-      if(!ray||!ray.intersections.length) return;
-      const inter=ray.intersections[0];
-      const hitObj=inter.object;
+      const raycasterComp=hand.components.raycaster;
+      if(!raycasterComp) return;
 
-      // START
+      // 收集所有可能被打到的 mesh
+      const scanMeshes=[];
+
       if(startBtn.object3D.visible){
         const sp=document.getElementById('startPlane');
-        let found=false;
-        sp&&sp.object3D.traverse(c=>{if(c===hitObj) found=true;});
-        if(found){ doStart(); return; }
+        if(sp) sp.object3D.traverse(c=>{if(c.isMesh) scanMeshes.push({mesh:c,type:'start'});});
       }
-
-      // 數字牆 proxy
       if(gameState==='playing'&&proxyMesh){
-        let cur=hitObj;
-        while(cur){ if(cur===proxyMesh){ handleHit('plane',inter.uv); return; } cur=cur.parent; }
+        scanMeshes.push({mesh:proxyMesh,type:'plane'});
+      }
+      if(gameState==='result'&&vrRetryMesh){
+        vrRetryMesh.object3D.traverse(c=>{if(c.isMesh) scanMeshes.push({mesh:c,type:'retry'});});
       }
 
-      // RETRY（雙保險）
-      if(gameState==='result'){
-        if(vrRetryMeshObj&&hitObj===vrRetryMeshObj){ doRetry(); return; }
-        if(vrRetryMesh){
-          let found=false;
-          vrRetryMesh.object3D.traverse(c=>{if(c===hitObj) found=true;});
-          if(found){ doRetry(); return; }
-        }
-      }
+      if(!scanMeshes.length) return;
+
+      // 用 raycaster component 的底層 Three.js raycaster 直接打
+      const ray=raycasterComp.raycaster;
+      const hits=ray.intersectObjects(scanMeshes.map(s=>s.mesh),false);
+      if(!hits.length) return;
+
+      const hitMesh=hits[0].object;
+      const found=scanMeshes.find(s=>s.mesh===hitMesh);
+      if(found) handleHit(found.type,hits[0].uv);
     });
   });
 
+  // 只在非 VR 模式下重置視角
   setTimeout(()=>{
-    const lc=cam.components['look-controls'];
-    if(lc){lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0;}
+    if(!sceneEl.is('vr-mode')){
+      const lc=cam.components['look-controls'];
+      if(lc){lc.yawObject.rotation.y=0; lc.pitchObject.rotation.x=0;}
+      cam.setAttribute('position',{x:0,y:1.6,z:0});
+    }
   },0);
 });
 </script>
